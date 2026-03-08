@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Fan Radar",
+    "slug": "fan-radar-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#050510"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.fanradar.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./icon.png",
+        "backgroundColor": "#050510"
+      },
+      "package": "com.fanradar.app"
+    },
+    "web": {
+      "name": "Fan Radar",
+      "shortName": "Fan Radar",
+      "description": "근처 K-pop 팬을 찾아보세요",
+      "backgroundColor": "#050510",
+      "themeColor": "#FF2D78",
+      "display": "standalone",
+      "orientation": "portrait",
+      "favicon": "./icon.png"
+    }
+  }
+}

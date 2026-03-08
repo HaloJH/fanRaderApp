@@ -1,0 +1,1600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fan Radar — K-pop Fan Discovery App</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #030308;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+            overflow: hidden;
+        }
+
+        /* ======= PHONE FRAME ======= */
+        .phone-frame {
+            width: 390px;
+            height: 844px;
+            background: #050510;
+            border-radius: 50px;
+            border: 2px solid #1A1A30;
+            position: relative;
+            overflow: hidden;
+            box-shadow:
+                0 0 0 1px #0D0D1A,
+                0 0 80px rgba(255,45,120,0.12),
+                0 0 160px rgba(124,58,237,0.08),
+                0 40px 120px rgba(0,0,0,0.9);
+            flex-shrink: 0;
+        }
+
+        .screen {
+            position: absolute;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+        }
+        .screen.active { display: flex; }
+
+        .screen.enter {
+            animation: enterRight 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+        @keyframes enterRight {
+            from { transform: translateX(30px); opacity: 0; }
+            to   { transform: translateX(0);   opacity: 1; }
+        }
+
+        /* ======= STATUS BAR ======= */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 28px 0;
+            font-size: 12px;
+            color: #fff;
+            font-weight: 600;
+            position: relative;
+            z-index: 100;
+            flex-shrink: 0;
+        }
+        .notch {
+            width: 126px;
+            height: 36px;
+            background: #000;
+            border-radius: 0 0 22px 22px;
+            position: absolute;
+            top: 0; left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* ======= SPLASH ======= */
+        #screen-splash {
+            background: radial-gradient(ellipse at center, #0C0425 0%, #050510 70%);
+            justify-content: center;
+            align-items: center;
+        }
+        .splash-rings {
+            position: absolute;
+            width: 700px; height: 700px;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+        .sr {
+            position: absolute;
+            border-radius: 50%;
+            border: 1px solid;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            animation: sring 3.5s ease-out infinite;
+        }
+        .sr:nth-child(1) { width:90px;  height:90px;  border-color:rgba(255,45,120,.9);  animation-delay:0s; }
+        .sr:nth-child(2) { width:180px; height:180px; border-color:rgba(255,45,120,.55); animation-delay:.5s; }
+        .sr:nth-child(3) { width:290px; height:290px; border-color:rgba(255,45,120,.3);  animation-delay:1s; }
+        .sr:nth-child(4) { width:420px; height:420px; border-color:rgba(255,45,120,.15); animation-delay:1.5s; }
+        .sr:nth-child(5) { width:570px; height:570px; border-color:rgba(255,45,120,.06); animation-delay:2s; }
+        @keyframes sring {
+            0%   { opacity:0; transform:translate(-50%,-50%) scale(.85); }
+            40%  { opacity:1; }
+            100% { opacity:0; transform:translate(-50%,-50%) scale(1.04); }
+        }
+        .splash-content { position:relative; z-index:10; text-align:center; }
+        .splash-logo {
+            width:88px; height:88px;
+            background: linear-gradient(135deg, #FF2D78, #7C3AED);
+            border-radius:24px;
+            display:flex; align-items:center; justify-content:center;
+            margin:0 auto 22px;
+            font-size:42px;
+            box-shadow: 0 0 50px rgba(255,45,120,.5), 0 0 100px rgba(255,45,120,.2);
+        }
+        .splash-title { font-size:34px; font-weight:900; color:#fff; letter-spacing:-1px; }
+        .splash-sub {
+            font-size:12px; color:rgba(255,255,255,.4);
+            margin-top:10px; letter-spacing:3px; text-transform:uppercase;
+        }
+        .splash-loading {
+            display:flex; gap:6px; justify-content:center; margin-top:30px;
+        }
+        .load-dot {
+            width:6px; height:6px; border-radius:50%;
+            background:#FF2D78;
+            animation: ldot 1.4s ease-in-out infinite;
+        }
+        .load-dot:nth-child(2) { animation-delay:.2s; }
+        .load-dot:nth-child(3) { animation-delay:.4s; }
+        @keyframes ldot { 0%,80%,100%{opacity:.2;transform:scale(.7)} 40%{opacity:1;transform:scale(1)} }
+
+        /* ======= COMMON COMPONENTS ======= */
+        .btn-primary {
+            width:100%; padding:18px;
+            background: linear-gradient(135deg, #FF2D78, #D91E6A);
+            border:none; border-radius:18px;
+            color:#fff; font-size:17px; font-weight:700;
+            cursor:pointer;
+            box-shadow: 0 10px 35px rgba(255,45,120,.45);
+            position:relative; overflow:hidden;
+            transition: transform .12s, box-shadow .2s;
+            font-family:inherit;
+        }
+        .btn-primary:active { transform:scale(.97); }
+        .btn-primary::after {
+            content:'';
+            position:absolute; inset:0;
+            background: linear-gradient(135deg, rgba(255,255,255,.12), transparent);
+        }
+        .btn-ghost {
+            width:100%; padding:16px;
+            background:transparent; border:none;
+            color:rgba(255,255,255,.35); font-size:14px;
+            cursor:pointer; margin-top:6px;
+            font-family:inherit;
+        }
+        .btn-social {
+            width:100%; padding:16px;
+            background:rgba(255,255,255,.06);
+            border:1.5px solid rgba(255,255,255,.1);
+            border-radius:16px;
+            color:#fff; font-size:16px; font-weight:600;
+            cursor:pointer; display:flex; align-items:center;
+            justify-content:center; gap:12px;
+            margin-top:12px;
+            transition:background .2s;
+            font-family:inherit;
+        }
+        .btn-social:active { background:rgba(255,255,255,.12); }
+
+        .back-btn {
+            width:42px; height:42px;
+            background:rgba(255,255,255,.08);
+            border-radius:13px;
+            display:flex; align-items:center; justify-content:center;
+            cursor:pointer; font-size:18px; color:#fff;
+            flex-shrink:0;
+        }
+        .progress-bar {
+            flex:1; height:4px;
+            background:rgba(255,255,255,.1);
+            border-radius:2px; overflow:hidden;
+        }
+        .progress-fill {
+            height:100%;
+            background:linear-gradient(90deg, #FF2D78, #7C3AED);
+            border-radius:2px; transition:width .4s ease;
+        }
+        .step-label { font-size:12px; color:rgba(255,255,255,.35); white-space:nowrap; }
+
+        .screen-header {
+            padding:54px 22px 16px;
+            display:flex; align-items:center; gap:14px;
+            flex-shrink:0;
+        }
+        .screen-scroll {
+            flex:1; overflow-y:auto; padding:0 22px;
+            scrollbar-width:none;
+        }
+        .screen-scroll::-webkit-scrollbar { display:none; }
+        .bottom-action {
+            padding:14px 22px 38px;
+            background:linear-gradient(to top, #050510 70%, transparent);
+            flex-shrink:0;
+        }
+        .h1 { font-size:27px; font-weight:900; color:#fff; letter-spacing:-.5px; }
+        .sub { font-size:14px; color:rgba(255,255,255,.4); margin-top:4px; margin-bottom:26px; }
+
+        /* ======= ONBOARDING ======= */
+        #screen-onboard {
+            background:#050510;
+        }
+        .onboard-hero {
+            flex:1; position:relative; overflow:hidden; min-height:0;
+        }
+        .onboard-map-bg {
+            position:absolute; inset:0;
+            background:radial-gradient(ellipse 130% 90% at 50% 45%, #120338 0%, #050510 65%);
+        }
+        .mini-radar-wrap {
+            position:absolute;
+            top:50%; left:50%;
+            transform:translate(-50%, -54%);
+            width:300px; height:300px;
+        }
+        .mr {
+            position:absolute; border-radius:50%; border:1px solid;
+            top:50%; left:50%;
+            transform:translate(-50%,-50%);
+            animation: sring 2.8s ease-out infinite;
+        }
+        .mr:nth-child(1){width:56px;  height:56px;  border-color:rgba(255,45,120,.9);  animation-delay:0s;}
+        .mr:nth-child(2){width:110px; height:110px; border-color:rgba(255,45,120,.55); animation-delay:.4s;}
+        .mr:nth-child(3){width:170px; height:170px; border-color:rgba(255,45,120,.3);  animation-delay:.8s;}
+        .mr:nth-child(4){width:240px; height:240px; border-color:rgba(255,45,120,.12); animation-delay:1.2s;}
+        .me-pin {
+            position:absolute; top:50%; left:50%;
+            transform:translate(-50%,-50%);
+            width:46px; height:46px;
+            background:linear-gradient(135deg,#FF2D78,#E91E8C);
+            border-radius:50%;
+            display:flex; align-items:center; justify-content:center;
+            font-size:22px;
+            box-shadow:0 0 30px rgba(255,45,120,.6), 0 0 60px rgba(255,45,120,.25);
+            animation: cpulse 2s ease-in-out infinite;
+            z-index:5;
+        }
+        @keyframes cpulse {
+            0%,100%{box-shadow:0 0 20px rgba(255,45,120,.6),0 0 40px rgba(255,45,120,.25);}
+            50%{box-shadow:0 0 40px rgba(255,45,120,.8),0 0 80px rgba(255,45,120,.4);}
+        }
+        .fpin {
+            position:absolute;
+            cursor:pointer;
+            animation:flt 3s ease-in-out infinite;
+        }
+        @keyframes flt { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)} }
+        .fpin-av {
+            width:44px; height:44px; border-radius:50%;
+            border:2.5px solid;
+            background:#16162A;
+            display:flex; align-items:center; justify-content:center;
+            font-size:22px; position:relative;
+            box-shadow:0 4px 18px rgba(0,0,0,.55);
+        }
+        .fpin-badge {
+            position:absolute; bottom:-5px; left:50%;
+            transform:translateX(-50%);
+            background:linear-gradient(90deg,#FF2D78,#7C3AED);
+            color:#fff; font-size:9px; font-weight:800;
+            padding:2px 6px; border-radius:10px; white-space:nowrap;
+        }
+
+        .onboard-bottom {
+            padding:28px 26px 38px;
+            background:linear-gradient(to top, #050510 55%, transparent);
+            flex-shrink:0;
+        }
+        .ob-tag {
+            background:rgba(255,45,120,.13);
+            border:1px solid rgba(255,45,120,.3);
+            color:#FF2D78; font-size:12px; font-weight:700;
+            padding:6px 14px; border-radius:20px;
+            display:inline-block; margin-bottom:14px;
+        }
+        .ob-title {
+            font-size:34px; font-weight:900; color:#fff;
+            line-height:1.18; letter-spacing:-.5px; margin-bottom:12px;
+        }
+        .ob-title span {
+            background:linear-gradient(90deg,#FF2D78,#7C3AED);
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+        }
+        .ob-desc { font-size:15px; color:rgba(255,255,255,.45); line-height:1.65; margin-bottom:28px; }
+
+        /* ======= GROUPS ======= */
+        #screen-groups { background:#050510; }
+        .group-grid {
+            display:grid; grid-template-columns:repeat(3,1fr); gap:11px;
+            margin-bottom:10px;
+        }
+        .gchip {
+            background:rgba(255,255,255,.05);
+            border:1.5px solid rgba(255,255,255,.09);
+            border-radius:18px; padding:14px 8px;
+            text-align:center; cursor:pointer;
+            transition:all .2s; position:relative;
+        }
+        .gchip.sel {
+            background:rgba(255,45,120,.14);
+            border-color:#FF2D78;
+            box-shadow:0 0 22px rgba(255,45,120,.18);
+        }
+        .gchip.sel::after {
+            content:'✓';
+            position:absolute; top:7px; right:7px;
+            width:18px; height:18px;
+            background:#FF2D78; border-radius:50%;
+            font-size:10px; display:flex; align-items:center; justify-content:center;
+            color:#fff; font-weight:800;
+            line-height:18px;
+        }
+        .ge { font-size:28px; margin-bottom:5px; }
+        .gn { font-size:12px; font-weight:800; color:#fff; }
+        .gf { font-size:10px; color:rgba(255,255,255,.35); margin-top:2px; }
+        .sel-count { font-size:13px; color:rgba(255,255,255,.45); text-align:center; padding:12px 0 4px; }
+        .sel-count b { color:#FF2D78; }
+
+        /* ======= STYLE ======= */
+        #screen-style { background:#050510; }
+        .sopt {
+            background:rgba(255,255,255,.045);
+            border:1.5px solid rgba(255,255,255,.08);
+            border-radius:20px; padding:18px; cursor:pointer;
+            display:flex; align-items:center; gap:14px;
+            margin-bottom:11px; transition:all .2s;
+        }
+        .sopt.sel { background:rgba(255,45,120,.1); border-color:#FF2D78; }
+        .sopt-icon {
+            width:52px; height:52px;
+            background:rgba(255,45,120,.13);
+            border-radius:14px;
+            display:flex; align-items:center; justify-content:center;
+            font-size:26px; flex-shrink:0;
+        }
+        .sopt.sel .sopt-icon { background:rgba(255,45,120,.22); }
+        .sopt-info { flex:1; }
+        .sopt-name { font-size:16px; font-weight:800; color:#fff; margin-bottom:3px; }
+        .sopt-desc { font-size:13px; color:rgba(255,255,255,.4); line-height:1.4; }
+        .radio-dot {
+            width:22px; height:22px; border-radius:50%;
+            border:2px solid rgba(255,255,255,.2);
+            display:flex; align-items:center; justify-content:center;
+            flex-shrink:0;
+        }
+        .sopt.sel .radio-dot { border-color:#FF2D78; background:rgba(255,45,120,.2); }
+        .radio-in { width:10px; height:10px; background:#FF2D78; border-radius:50%; display:none; }
+        .sopt.sel .radio-in { display:block; }
+
+        /* ======= LOCATION ======= */
+        #screen-location { background:#050510; justify-content:flex-start; }
+        .loc-hero {
+            flex:1; display:flex; flex-direction:column;
+            align-items:center; justify-content:center;
+            padding:20px 32px 10px; text-align:center;
+        }
+        .loc-icon {
+            width:104px; height:104px;
+            background:rgba(255,45,120,.1);
+            border:2px solid rgba(255,45,120,.3);
+            border-radius:32px;
+            display:flex; align-items:center; justify-content:center;
+            font-size:52px; margin-bottom:28px;
+            box-shadow:0 0 50px rgba(255,45,120,.18);
+        }
+        .loc-table {
+            background:rgba(255,255,255,.04);
+            border:1px solid rgba(255,255,255,.07);
+            border-radius:18px; padding:18px 20px; width:100%;
+        }
+        .loc-row {
+            display:flex; justify-content:space-between; align-items:center;
+            padding:9px 0;
+        }
+        .loc-row:not(:last-child) { border-bottom:1px solid rgba(255,255,255,.05); }
+        .loc-lbl { font-size:14px; color:rgba(255,255,255,.55); display:flex; align-items:center; gap:8px; }
+        .loc-val { font-size:13px; font-weight:800; color:#FF2D78; }
+
+        /* ======= RADAR ======= */
+        #screen-radar { background:#050510; }
+        .radar-topbar {
+            padding:54px 22px 14px;
+            display:flex; justify-content:space-between; align-items:center;
+            flex-shrink:0; position:relative; z-index:10;
+        }
+        .rtb-left h1 { font-size:26px; font-weight:900; color:#fff; letter-spacing:-.5px; }
+        .rtb-left p { font-size:13px; color:rgba(255,255,255,.4); margin-top:2px; }
+        .online-badge {
+            background:rgba(0,220,120,.13);
+            border:1px solid rgba(0,220,120,.3);
+            border-radius:20px; padding:7px 13px;
+            display:flex; align-items:center; gap:7px;
+            font-size:12px; color:#00DC78; font-weight:700;
+        }
+        .online-dot {
+            width:7px; height:7px; background:#00DC78;
+            border-radius:50%;
+            animation:blink 1.6s ease-in-out infinite;
+        }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
+
+        .radar-map {
+            flex:1; position:relative; overflow:hidden; min-height:0;
+        }
+        .rm-bg {
+            position:absolute; inset:0;
+            background:radial-gradient(ellipse 100% 100% at 50% 50%, #090220 0%, #050510 65%);
+        }
+        .rm-grid {
+            position:absolute; inset:0;
+            background-image:
+                linear-gradient(rgba(255,45,120,.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,45,120,.035) 1px, transparent 1px);
+            background-size:38px 38px;
+        }
+        .rm-ring {
+            position:absolute; border-radius:50%; border:1px solid;
+            top:50%; left:50%; transform:translate(-50%,-50%);
+            pointer-events:none;
+        }
+        .rm-ring-1{width:96px;  height:96px;  border-color:rgba(255,45,120,.5);}
+        .rm-ring-2{width:194px; height:194px; border-color:rgba(255,45,120,.28);}
+        .rm-ring-3{width:306px; height:306px; border-color:rgba(255,45,120,.16);}
+        .rm-ring-4{width:430px; height:430px; border-color:rgba(255,45,120,.07);}
+        .rm-cross {
+            position:absolute; background:rgba(255,45,120,.08);
+            pointer-events:none;
+        }
+        .rm-cross-h { width:100%; height:1px; top:50%; }
+        .rm-cross-v { width:1px; height:100%; left:50%; }
+        .rm-sweep {
+            position:absolute;
+            width:218px; height:218px;
+            top:50%; left:50%;
+            transform-origin:0 0;
+            animation:sweep 3.2s linear infinite;
+            pointer-events:none;
+        }
+        @keyframes sweep { from{transform:rotate(-90deg)} to{transform:rotate(270deg)} }
+        .rm-sweep-gfx {
+            position:absolute;
+            width:218px; height:218px;
+            background:conic-gradient(
+                from 0deg, transparent 0deg,
+                rgba(255,45,120,.28) 28deg,
+                rgba(255,45,120,.14) 58deg,
+                transparent 75deg
+            );
+            border-radius:50%;
+        }
+        .rm-center {
+            position:absolute; top:50%; left:50%;
+            transform:translate(-50%,-50%); z-index:15;
+        }
+        .rm-center-dot {
+            width:50px; height:50px;
+            background:linear-gradient(135deg,#FF2D78,#E91E8C);
+            border-radius:50%;
+            display:flex; align-items:center; justify-content:center;
+            font-size:22px;
+            box-shadow:0 0 32px rgba(255,45,120,.65), 0 0 65px rgba(255,45,120,.3);
+            animation:cpulse 2s ease-in-out infinite;
+            cursor:pointer;
+        }
+        .rm-center-lbl {
+            position:absolute; top:calc(100% + 7px); left:50%;
+            transform:translateX(-50%);
+            font-size:10px; color:#FF2D78; font-weight:800;
+            background:rgba(255,45,120,.15); padding:2px 9px; border-radius:10px;
+            white-space:nowrap;
+        }
+        .rm-rlabel {
+            position:absolute; font-size:9px;
+            color:rgba(255,45,120,.4); font-weight:700;
+            pointer-events:none;
+        }
+        .radar-bottom {
+            position:absolute; bottom:0; left:0; right:0;
+            padding:14px 18px 88px;
+            background:linear-gradient(to top, rgba(5,5,16,.97) 55%, transparent);
+            z-index:30;
+        }
+        .radar-count {
+            text-align:center; font-size:14px; color:rgba(255,255,255,.55);
+            margin-bottom:10px;
+        }
+        .radar-count strong { color:#FF2D78; font-size:18px; }
+        .filter-row {
+            display:flex; gap:8px; overflow-x:auto;
+            scrollbar-width:none; padding-bottom:2px;
+        }
+        .filter-row::-webkit-scrollbar { display:none; }
+        .fchip {
+            padding:8px 14px; border-radius:20px;
+            font-size:13px; font-weight:700; cursor:pointer;
+            white-space:nowrap; flex-shrink:0;
+            border:1px solid rgba(255,255,255,.1);
+            background:rgba(255,255,255,.06);
+            color:rgba(255,255,255,.55);
+            transition:all .2s;
+        }
+        .fchip.on { background:rgba(255,45,120,.18); border-color:#FF2D78; color:#FF2D78; }
+
+        /* ======= MAP FAN PINS ======= */
+        .mpin {
+            position:absolute; cursor:pointer; z-index:20;
+            transition:transform .2s;
+        }
+        .mpin:active { transform:scale(.88) !important; }
+        .mpin-av {
+            width:46px; height:46px; border-radius:50%;
+            border:2.5px solid;
+            background:#14142A;
+            display:flex; align-items:center; justify-content:center;
+            font-size:22px; position:relative;
+            box-shadow:0 5px 18px rgba(0,0,0,.55);
+        }
+        .mpin-ring {
+            position:absolute; inset:-7px; border-radius:50%;
+            border:2px solid;
+            animation:pring 2.2s ease-out infinite;
+        }
+        @keyframes pring { 0%{transform:scale(.8);opacity:.9} 100%{transform:scale(1.5);opacity:0} }
+        .mpin-badge {
+            position:absolute; bottom:-5px; left:50%;
+            transform:translateX(-50%);
+            background:linear-gradient(90deg,#FF2D78,#7C3AED);
+            color:#fff; font-size:9px; font-weight:900;
+            padding:2px 7px; border-radius:10px; white-space:nowrap;
+        }
+        .pin-pop { animation:pinpop .55s cubic-bezier(.22,1,.36,1) forwards; }
+        @keyframes pinpop {
+            from{transform:scale(0) translateY(24px);opacity:0}
+            to{transform:scale(1) translateY(0);opacity:1}
+        }
+
+        /* ======= BOTTOM NAV ======= */
+        .bottom-nav {
+            position:absolute; bottom:0; left:0; right:0;
+            height:84px;
+            background:rgba(6,6,18,.96);
+            border-top:1px solid rgba(255,255,255,.06);
+            display:flex; align-items:center; justify-content:space-around;
+            padding:0 8px 18px;
+            backdrop-filter:blur(24px);
+            z-index:50;
+        }
+        .bnav-item {
+            display:flex; flex-direction:column; align-items:center;
+            gap:4px; cursor:pointer; flex:1; padding:8px;
+            border-radius:14px;
+        }
+        .bnav-icon { font-size:24px; filter:grayscale(1) opacity(.35); transition:filter .2s,transform .2s; }
+        .bnav-lbl { font-size:10px; color:rgba(255,255,255,.28); font-weight:700; }
+        .bnav-item.on .bnav-icon { filter:none; transform:scale(1.1); }
+        .bnav-item.on .bnav-lbl { color:#FF2D78; }
+
+        /* ======= MATCH CARD ======= */
+        #screen-match { background:#050510; }
+        .match-topbar {
+            padding:54px 22px 16px;
+            display:flex; justify-content:space-between; align-items:center;
+            flex-shrink:0;
+        }
+        .match-topbar-title { font-size:26px; font-weight:900; color:#fff; }
+        .match-topbar-sub { font-size:13px; color:rgba(255,255,255,.35); margin-top:2px; }
+        .match-settings-btn {
+            width:44px; height:44px;
+            background:rgba(255,255,255,.07);
+            border-radius:13px;
+            display:flex; align-items:center; justify-content:center;
+            font-size:20px; cursor:pointer;
+        }
+        .card-stack {
+            flex:1; position:relative;
+            display:flex; align-items:center; justify-content:center;
+            padding:0 18px; min-height:0;
+        }
+        .card-shadow-2 {
+            position:absolute;
+            width:calc(100% - 36px - 30px);
+            height:460px;
+            background:rgba(255,255,255,.025);
+            border-radius:28px;
+            border:1px solid rgba(255,255,255,.05);
+            transform:translateY(18px) scale(.93);
+        }
+        .card-shadow-1 {
+            position:absolute;
+            width:calc(100% - 36px - 16px);
+            height:460px;
+            background:rgba(255,255,255,.04);
+            border-radius:28px;
+            border:1px solid rgba(255,255,255,.07);
+            transform:translateY(9px) scale(.965);
+        }
+        .match-card {
+            width:calc(100% - 36px);
+            height:460px;
+            background:linear-gradient(160deg, #0F0F24, #130A28);
+            border-radius:28px;
+            border:1px solid rgba(255,255,255,.1);
+            position:relative; overflow:hidden;
+            cursor:grab; z-index:10;
+            box-shadow:0 22px 65px rgba(0,0,0,.65);
+            transition:transform .14s ease;
+            user-select:none; flex-shrink:0;
+        }
+        .card-glow {
+            position:absolute;
+            width:220px; height:220px;
+            border-radius:50%;
+            filter:blur(70px); opacity:.35;
+            top:-60px; right:-50px;
+            background:#7C3AED;
+            pointer-events:none;
+        }
+        .card-glow-2 {
+            position:absolute;
+            width:160px; height:160px;
+            border-radius:50%;
+            filter:blur(60px); opacity:.2;
+            bottom:-40px; left:-40px;
+            background:#FF2D78;
+            pointer-events:none;
+        }
+        .match-score {
+            position:absolute; top:18px; right:18px;
+            background:linear-gradient(135deg,#FF2D78,#FF6835);
+            border-radius:16px; padding:10px 15px;
+            text-align:center; z-index:5;
+            box-shadow:0 4px 22px rgba(255,45,120,.45);
+        }
+        .ms-num { font-size:28px; font-weight:900; color:#fff; line-height:1; }
+        .ms-lbl {
+            font-size:9px; color:rgba(255,255,255,.75);
+            font-weight:700; letter-spacing:1.5px; text-transform:uppercase;
+            margin-top:2px;
+        }
+        .card-avatar {
+            width:96px; height:96px; border-radius:50%;
+            background:linear-gradient(135deg,#FF2D78,#7C3AED);
+            display:flex; align-items:center; justify-content:center;
+            font-size:48px;
+            margin:36px auto 14px;
+            box-shadow:0 0 44px rgba(255,45,120,.3);
+            border:3px solid rgba(255,255,255,.14);
+        }
+        .card-name {
+            text-align:center; font-size:22px; font-weight:900;
+            color:#fff; padding:0 18px;
+        }
+        .card-meta { text-align:center; font-size:13px; color:rgba(255,255,255,.4); margin-top:4px; }
+        .card-badges {
+            display:flex; gap:8px; justify-content:center; margin-top:10px;
+        }
+        .cbadge {
+            padding:5px 12px; border-radius:20px;
+            font-size:12px; font-weight:700;
+            display:flex; align-items:center; gap:4px;
+        }
+        .cbadge-dist { background:rgba(0,212,255,.12); border:1px solid rgba(0,212,255,.28); color:#67E8F9; }
+        .cbadge-style { background:rgba(255,45,120,.12); border:1px solid rgba(255,45,120,.28); color:#FF88B0; }
+        .card-interests {
+            margin:18px 18px 0;
+        }
+        .ci-title {
+            font-size:10px; color:rgba(255,255,255,.28);
+            font-weight:800; letter-spacing:1.8px; text-transform:uppercase;
+            margin-bottom:10px;
+        }
+        .ci-tags { display:flex; flex-wrap:wrap; gap:7px; }
+        .citag {
+            padding:6px 12px; border-radius:20px;
+            font-size:12px; font-weight:700;
+        }
+        .citag-m { background:rgba(255,45,120,.14); color:#FF88B0; border:1px solid rgba(255,45,120,.28); }
+        .citag-s { background:rgba(124,58,237,.14); color:#A78BFA; border:1px solid rgba(124,58,237,.28); }
+        .citag-a { background:rgba(0,212,255,.1); color:#67E8F9; border:1px solid rgba(0,212,255,.2); }
+        .swipe-hint {
+            text-align:center; font-size:12px;
+            color:rgba(255,255,255,.25); margin-top:4px;
+            flex-shrink:0; padding:0 22px;
+        }
+        .swipe-actions {
+            display:flex; justify-content:center; align-items:center;
+            gap:18px; padding:16px 22px 20px; flex-shrink:0;
+        }
+        .sact-btn {
+            border-radius:50%; display:flex;
+            align-items:center; justify-content:center;
+            cursor:pointer; border:none;
+            transition:transform .18s, box-shadow .18s;
+        }
+        .sact-btn:active { transform:scale(.85) !important; }
+        .sact-pass {
+            width:62px; height:62px; font-size:26px;
+            background:rgba(255,255,255,.07);
+            border:1.5px solid rgba(255,255,255,.12);
+        }
+        .sact-like {
+            width:76px; height:76px; font-size:32px;
+            background:linear-gradient(135deg,#FF2D78,#E91E8C);
+            box-shadow:0 10px 35px rgba(255,45,120,.55);
+        }
+        .sact-super {
+            width:62px; height:62px; font-size:26px;
+            background:rgba(124,58,237,.2);
+            border:1.5px solid rgba(124,58,237,.4);
+        }
+        .swipe-ol {
+            position:absolute; inset:0; border-radius:28px;
+            display:flex; align-items:center; justify-content:center;
+            opacity:0; pointer-events:none; z-index:20;
+            transition:opacity .15s;
+        }
+        .swipe-ol-like { background:rgba(0,200,100,.18); border:3px solid rgba(0,200,100,.55); }
+        .swipe-ol-pass { background:rgba(255,50,50,.18); border:3px solid rgba(255,50,50,.5); }
+        .swipe-ol-txt {
+            font-size:38px; font-weight:900; color:#fff;
+            letter-spacing:5px;
+            text-shadow:0 2px 12px rgba(0,0,0,.5);
+            transform:rotate(-14deg);
+        }
+
+        /* ======= MATCHED ======= */
+        #screen-matched {
+            background:#050510;
+            justify-content:center; align-items:center;
+        }
+        .matched-bg {
+            position:absolute; inset:0;
+            background:radial-gradient(ellipse at center, #1A0535 0%, #050510 70%);
+        }
+        .confetti-wrap { position:absolute; inset:0; overflow:hidden; pointer-events:none; }
+        .cp {
+            position:absolute; border-radius:3px;
+            animation:cfall linear infinite;
+        }
+        @keyframes cfall {
+            0%{transform:translateY(-20px) rotate(0deg);opacity:1}
+            100%{transform:translateY(900px) rotate(800deg);opacity:0}
+        }
+        .matched-content { position:relative; z-index:10; text-align:center; padding:0 30px; }
+        .matched-emoji { font-size:78px; margin-bottom:20px; animation:bouncein .6s cubic-bezier(.22,1,.36,1); }
+        @keyframes bouncein { 0%{transform:scale(0)} 60%{transform:scale(1.18)} 80%{transform:scale(.94)} 100%{transform:scale(1)} }
+        .matched-title {
+            font-size:38px; font-weight:900;
+            background:linear-gradient(90deg,#FF2D78,#7C3AED);
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+            margin-bottom:12px;
+        }
+        .matched-desc { font-size:15px; color:rgba(255,255,255,.5); line-height:1.65; margin-bottom:30px; }
+        .matched-avs {
+            display:flex; justify-content:center; align-items:center;
+            margin-bottom:30px;
+        }
+        .mav {
+            width:80px; height:80px; border-radius:50%;
+            display:flex; align-items:center; justify-content:center;
+            font-size:38px; border:3px solid #050510;
+        }
+        .mav-me { background:linear-gradient(135deg,#FF2D78,#E91E8C); box-shadow:0 0 30px rgba(255,45,120,.4); z-index:2; }
+        .mav-them { background:linear-gradient(135deg,#7C3AED,#4F46E5); margin-left:-22px; box-shadow:0 0 30px rgba(124,58,237,.4); }
+        .mav-heart {
+            width:32px; height:32px;
+            background:linear-gradient(135deg,#FF2D78,#FF6835);
+            border-radius:50%;
+            display:flex; align-items:center; justify-content:center;
+            font-size:16px; z-index:3;
+            margin-left:-14px; margin-right:-14px;
+            box-shadow:0 4px 16px rgba(255,45,120,.5);
+            animation:heartbeat 1.5s ease-in-out infinite;
+        }
+        @keyframes heartbeat { 0%,100%{transform:scale(1)} 50%{transform:scale(1.18)} }
+
+        /* ======= CHAT ======= */
+        #screen-chat { background:#050510; }
+        .chat-header {
+            padding:54px 18px 14px;
+            display:flex; align-items:center; gap:13px;
+            border-bottom:1px solid rgba(255,255,255,.06);
+            flex-shrink:0;
+        }
+        .chat-av {
+            width:48px; height:48px; border-radius:50%;
+            background:linear-gradient(135deg,#7C3AED,#4F46E5);
+            display:flex; align-items:center; justify-content:center;
+            font-size:24px; position:relative; flex-shrink:0;
+        }
+        .chat-av-online {
+            position:absolute; bottom:1px; right:1px;
+            width:13px; height:13px;
+            background:#00DC78; border-radius:50%;
+            border:2.5px solid #050510;
+        }
+        .chat-info { flex:1; min-width:0; }
+        .chat-name { font-size:17px; font-weight:800; color:#fff; }
+        .chat-meta { font-size:12px; color:rgba(255,255,255,.38); margin-top:2px; }
+        .chat-btns { display:flex; gap:9px; }
+        .chat-btn {
+            width:38px; height:38px;
+            background:rgba(255,255,255,.07); border-radius:12px;
+            display:flex; align-items:center; justify-content:center;
+            font-size:17px; cursor:pointer;
+        }
+        .chat-msgs {
+            flex:1; overflow-y:auto;
+            padding:16px 16px 10px;
+            scrollbar-width:none;
+            display:flex; flex-direction:column; gap:11px;
+        }
+        .chat-msgs::-webkit-scrollbar { display:none; }
+        .match-intro {
+            background:rgba(255,45,120,.08);
+            border:1px solid rgba(255,45,120,.2);
+            border-radius:16px; padding:13px 16px;
+            text-align:center; margin-bottom:2px;
+        }
+        .mi-title { font-size:14px; font-weight:800; color:#FF2D78; margin-bottom:3px; }
+        .mi-sub { font-size:12px; color:rgba(255,255,255,.38); }
+        .msg { max-width:76%; display:flex; flex-direction:column; gap:4px; }
+        .msg.rcv { align-self:flex-start; }
+        .msg.snt { align-self:flex-end; align-items:flex-end; }
+        .msg-bbl {
+            padding:12px 16px; border-radius:20px;
+            font-size:15px; line-height:1.45; color:#fff;
+        }
+        .msg.rcv .msg-bbl { background:rgba(255,255,255,.09); border-bottom-left-radius:6px; }
+        .msg.snt .msg-bbl { background:linear-gradient(135deg,#FF2D78,#E91E8C); border-bottom-right-radius:6px; }
+        .msg-time { font-size:11px; color:rgba(255,255,255,.28); padding:0 4px; }
+        .chat-suggests {
+            display:flex; gap:8px; padding:0 14px 10px;
+            overflow-x:auto; scrollbar-width:none; flex-shrink:0;
+        }
+        .chat-suggests::-webkit-scrollbar { display:none; }
+        .cs-chip {
+            padding:8px 14px;
+            background:rgba(255,255,255,.06);
+            border:1px solid rgba(255,255,255,.1);
+            border-radius:20px; font-size:13px;
+            color:rgba(255,255,255,.55);
+            white-space:nowrap; cursor:pointer; flex-shrink:0;
+            transition:all .2s;
+        }
+        .cs-chip:active { background:rgba(255,45,120,.15); border-color:#FF2D78; color:#FF2D78; }
+        .chat-input-row {
+            display:flex; align-items:center; gap:9px;
+            padding:10px 14px 32px;
+            border-top:1px solid rgba(255,255,255,.06);
+            flex-shrink:0;
+        }
+        .chat-inp {
+            flex:1; background:rgba(255,255,255,.07);
+            border:1px solid rgba(255,255,255,.1);
+            border-radius:24px; padding:12px 18px;
+            color:#fff; font-size:15px; outline:none;
+            font-family:inherit;
+        }
+        .chat-inp::placeholder { color:rgba(255,255,255,.28); }
+        .chat-send {
+            width:46px; height:46px;
+            background:linear-gradient(135deg,#FF2D78,#E91E8C);
+            border-radius:50%; border:none;
+            display:flex; align-items:center; justify-content:center;
+            font-size:20px; cursor:pointer; flex-shrink:0;
+            box-shadow:0 5px 18px rgba(255,45,120,.45);
+        }
+
+        /* ======= TOAST ======= */
+        .toast {
+            position:absolute; top:100px; left:50%;
+            transform:translateX(-50%);
+            background:rgba(12,12,26,.97);
+            border:1px solid rgba(255,45,120,.3);
+            border-radius:20px; padding:12px 20px;
+            display:flex; align-items:center; gap:10px;
+            z-index:999; backdrop-filter:blur(24px);
+            white-space:nowrap;
+            box-shadow:0 10px 35px rgba(0,0,0,.6);
+            animation:tin .3s cubic-bezier(.22,1,.36,1);
+        }
+        @keyframes tin { from{transform:translateX(-50%) translateY(-18px);opacity:0} to{transform:translateX(-50%) translateY(0);opacity:1} }
+        @keyframes tout { from{transform:translateX(-50%) translateY(0);opacity:1} to{transform:translateX(-50%) translateY(-18px);opacity:0} }
+        .toast-ico { font-size:20px; }
+        .toast-txt { font-size:13px; color:#fff; font-weight:700; }
+        .toast-txt small { color:rgba(255,255,255,.45); font-weight:400; }
+
+        /* ======= DEMO NAV ======= */
+        .demo-nav {
+            display:flex; gap:8px; margin-top:22px;
+            flex-wrap:wrap; justify-content:center;
+            max-width:500px;
+        }
+        .demo-btn {
+            padding:9px 18px;
+            background:rgba(255,255,255,.07);
+            border:1px solid rgba(255,255,255,.14);
+            border-radius:12px;
+            color:rgba(255,255,255,.55);
+            font-size:13px; font-weight:600;
+            cursor:pointer; transition:all .2s;
+            font-family:inherit;
+        }
+        .demo-btn:hover { background:rgba(255,45,120,.1); border-color:rgba(255,45,120,.3); color:#FF2D78; }
+        .demo-btn.on { background:rgba(255,45,120,.15); border-color:#FF2D78; color:#FF2D78; }
+        .demo-label {
+            font-size:11px; color:rgba(255,255,255,.2);
+            letter-spacing:2px; text-transform:uppercase;
+            margin-bottom:10px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== PHONE ===== -->
+<div class="phone-frame" id="app">
+
+    <!-- SPLASH -->
+    <div class="screen active" id="screen-splash">
+        <div class="splash-rings">
+            <div class="sr"></div><div class="sr"></div>
+            <div class="sr"></div><div class="sr"></div><div class="sr"></div>
+        </div>
+        <div class="splash-content">
+            <div class="splash-logo">📡</div>
+            <div class="splash-title">Fan Radar</div>
+            <div class="splash-sub">K-pop · Connect · IRL</div>
+            <div class="splash-loading">
+                <div class="load-dot"></div>
+                <div class="load-dot"></div>
+                <div class="load-dot"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ONBOARDING -->
+    <div class="screen" id="screen-onboard">
+        <div class="onboard-hero">
+            <div class="onboard-map-bg"></div>
+            <div class="mini-radar-wrap">
+                <div class="mr"></div><div class="mr"></div>
+                <div class="mr"></div><div class="mr"></div>
+                <!-- Fan pins -->
+                <div class="fpin" style="top:24%;left:10%;animation-delay:.1s;" onclick="goTo('screen-match')">
+                    <div class="fpin-av" style="border-color:#FF2D78">👩<div class="fpin-badge">ARMY</div></div>
+                </div>
+                <div class="fpin" style="top:10%;right:16%;animation-delay:.7s;" onclick="goTo('screen-match')">
+                    <div class="fpin-av" style="border-color:#7C3AED">🧑‍🎤<div class="fpin-badge">94%</div></div>
+                </div>
+                <div class="fpin" style="bottom:20%;left:18%;animation-delay:.4s;" onclick="goTo('screen-match')">
+                    <div class="fpin-av" style="border-color:#00D4FF">👩‍🦱</div>
+                </div>
+                <div class="fpin" style="bottom:16%;right:12%;animation-delay:1s;" onclick="goTo('screen-match')">
+                    <div class="fpin-av" style="border-color:#FF2D78">👨<div class="fpin-badge">87%</div></div>
+                </div>
+                <div class="fpin" style="top:48%;right:6%;animation-delay:.3s;" onclick="goTo('screen-match')">
+                    <div class="fpin-av" style="border-color:#7C3AED">👩‍🦰</div>
+                </div>
+                <div class="me-pin">📍</div>
+            </div>
+        </div>
+        <div class="onboard-bottom">
+            <div class="ob-tag">✨ 같은 학교 · 같은 동네</div>
+            <div class="ob-title">근처 K-pop 팬을<br><span>지금 바로</span> 찾아봐</div>
+            <div class="ob-desc">AI가 취향을 분석해 진짜 잘 맞는<br>팬을 5분 안에 연결해드려요</div>
+            <button class="btn-primary" onclick="goTo('screen-signup')">Get Started →</button>
+            <button class="btn-ghost" onclick="goTo('screen-signup')">Already have an account? Sign in</button>
+        </div>
+    </div>
+
+    <!-- SIGN UP -->
+    <div class="screen" id="screen-signup">
+        <div style="padding:54px 24px 0;flex:1;display:flex;flex-direction:column;">
+            <div style="margin-bottom:6px;">
+                <span style="background:rgba(255,45,120,.14);border:1px solid rgba(255,45,120,.3);border-radius:20px;padding:6px 14px;font-size:12px;color:#FF2D78;font-weight:700;">Step 1 of 3</span>
+            </div>
+            <div class="h1" style="margin-top:16px;">시작해볼까요? 👋</div>
+            <div style="font-size:15px;color:rgba(255,255,255,.4);margin:6px 0 28px;">소셜 계정으로 5초 만에 가입 완료</div>
+            <div style="background:rgba(255,45,120,.08);border:1px solid rgba(255,45,120,.2);border-radius:18px;padding:15px 18px;margin-bottom:24px;">
+                <div style="font-size:13px;font-weight:800;color:#FF2D78;margin-bottom:3px;">⚡ 가입 후 5분 안에</div>
+                <div style="font-size:13px;color:rgba(255,255,255,.45);">근처 K-pop 팬 매칭이 시작됩니다</div>
+            </div>
+            <button class="btn-social" onclick="goTo('screen-groups')"><span style="font-size:22px;">🍎</span> Apple로 계속하기</button>
+            <button class="btn-social" onclick="goTo('screen-groups')"><span style="font-size:22px;">🔵</span> Google로 계속하기</button>
+            <div style="display:flex;align-items:center;gap:12px;margin:22px 0;">
+                <div style="flex:1;height:1px;background:rgba(255,255,255,.07);"></div>
+                <span style="font-size:12px;color:rgba(255,255,255,.25);">또는</span>
+                <div style="flex:1;height:1px;background:rgba(255,255,255,.07);"></div>
+            </div>
+            <button class="btn-social" onclick="goTo('screen-groups')"><span style="font-size:22px;">📧</span> 이메일로 가입</button>
+            <div style="flex:1;"></div>
+            <div style="text-align:center;font-size:12px;color:rgba(255,255,255,.25);padding-bottom:28px;">
+                가입하면 <u>이용약관</u> 및 <u>개인정보처리방침</u>에 동의하게 됩니다
+            </div>
+        </div>
+    </div>
+
+    <!-- GROUPS -->
+    <div class="screen" id="screen-groups">
+        <div class="screen-header">
+            <div class="back-btn" onclick="goBack()">←</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:33%"></div></div>
+            <div class="step-label">1 / 3</div>
+        </div>
+        <div class="screen-scroll">
+            <div class="h1">최애 그룹을 골라봐 💜</div>
+            <div class="sub">여러 개 선택 가능 · 나중에 수정 가능</div>
+            <div class="group-grid" id="group-grid"></div>
+            <div class="sel-count" id="sel-count">아직 선택 안 했어요</div>
+        </div>
+        <div class="bottom-action">
+            <button class="btn-primary" onclick="goTo('screen-style')">다음으로 →</button>
+        </div>
+    </div>
+
+    <!-- STYLE -->
+    <div class="screen" id="screen-style">
+        <div class="screen-header">
+            <div class="back-btn" onclick="goBack()">←</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:66%"></div></div>
+            <div class="step-label">2 / 3</div>
+        </div>
+        <div class="screen-scroll">
+            <div class="h1">팬 스타일이 뭐야? 🎵</div>
+            <div class="sub">나와 비슷한 팬을 매칭해드려요</div>
+            <div id="style-list">
+                <div class="sopt sel" onclick="selStyle(this)">
+                    <div class="sopt-icon">🎪</div>
+                    <div class="sopt-info">
+                        <div class="sopt-name">Concert Goer</div>
+                        <div class="sopt-desc">공연·팬미팅 같이 갈 동반자를 찾아요 🎫</div>
+                    </div>
+                    <div class="radio-dot"><div class="radio-in"></div></div>
+                </div>
+                <div class="sopt" onclick="selStyle(this)">
+                    <div class="sopt-icon">📱</div>
+                    <div class="sopt-info">
+                        <div class="sopt-name">Digital Fan</div>
+                        <div class="sopt-desc">온라인 응원, 스트리밍, 투표 함께해요</div>
+                    </div>
+                    <div class="radio-dot"><div class="radio-in"></div></div>
+                </div>
+                <div class="sopt" onclick="selStyle(this)">
+                    <div class="sopt-icon">🃏</div>
+                    <div class="sopt-info">
+                        <div class="sopt-name">Merch Collector</div>
+                        <div class="sopt-desc">포카 교환, 굿즈 공동구매 같이 해요</div>
+                    </div>
+                    <div class="radio-dot"><div class="radio-in"></div></div>
+                </div>
+                <div class="sopt" onclick="selStyle(this)">
+                    <div class="sopt-icon">☕</div>
+                    <div class="sopt-info">
+                        <div class="sopt-name">Casual Listener</div>
+                        <div class="sopt-desc">가볍게 K-pop 얘기 나눌 친구 원해요</div>
+                    </div>
+                    <div class="radio-dot"><div class="radio-in"></div></div>
+                </div>
+            </div>
+        </div>
+        <div class="bottom-action">
+            <button class="btn-primary" onclick="goTo('screen-location')">다음으로 →</button>
+        </div>
+    </div>
+
+    <!-- LOCATION -->
+    <div class="screen" id="screen-location">
+        <div class="screen-header">
+            <div class="back-btn" onclick="goBack()">←</div>
+            <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+            <div class="step-label">3 / 3</div>
+        </div>
+        <div class="loc-hero">
+            <div class="loc-icon">📍</div>
+            <div class="h1" style="text-align:center;">마지막 단계!</div>
+            <div style="font-size:15px;color:rgba(255,255,255,.45);line-height:1.75;margin:12px 0 28px;text-align:center;">
+                위치 권한을 허용하면<br>
+                <strong style="color:#FF2D78">반경 2km 이내</strong> 팬을<br>
+                실시간으로 발견할 수 있어요
+            </div>
+            <div class="loc-table">
+                <div class="loc-row">
+                    <div class="loc-lbl">🏫 School Range</div>
+                    <div class="loc-val">0.5km</div>
+                </div>
+                <div class="loc-row">
+                    <div class="loc-lbl">🏘️ Neighborhood</div>
+                    <div class="loc-val">2km</div>
+                </div>
+                <div class="loc-row">
+                    <div class="loc-lbl">🏙️ City Wide</div>
+                    <div class="loc-val">10km</div>
+                </div>
+            </div>
+        </div>
+        <div class="bottom-action">
+            <button class="btn-primary" onclick="startRadar()">📡 위치 허용하고 시작!</button>
+            <button class="btn-ghost" onclick="startRadar()">나중에 설정할게요</button>
+        </div>
+    </div>
+
+    <!-- RADAR MAP -->
+    <div class="screen" id="screen-radar">
+        <div class="radar-topbar">
+            <div class="rtb-left">
+                <h1>📡 Fan Radar</h1>
+                <p>근처 K-pop 팬 탐색 중…</p>
+            </div>
+            <div class="online-badge">
+                <div class="online-dot"></div>
+                <span id="online-ct">247명 온라인</span>
+            </div>
+        </div>
+
+        <div class="radar-map" id="radar-map">
+            <div class="rm-bg"></div>
+            <div class="rm-grid"></div>
+            <!-- Rings -->
+            <div class="rm-ring rm-ring-1"></div>
+            <div class="rm-ring rm-ring-2"></div>
+            <div class="rm-ring rm-ring-3"></div>
+            <div class="rm-ring rm-ring-4"></div>
+            <!-- Cross -->
+            <div class="rm-cross rm-cross-h"></div>
+            <div class="rm-cross rm-cross-v"></div>
+            <!-- Sweep -->
+            <div class="rm-sweep"><div class="rm-sweep-gfx"></div></div>
+            <!-- Range labels -->
+            <div class="rm-rlabel" style="top:calc(50% - 56px);left:50%;transform:translateX(-50%)">500m</div>
+            <div class="rm-rlabel" style="top:calc(50% - 105px);left:50%;transform:translateX(-50%)">1km</div>
+            <div class="rm-rlabel" style="top:calc(50% - 161px);left:50%;transform:translateX(-50%)">2km</div>
+            <!-- Center -->
+            <div class="rm-center">
+                <div class="rm-center-dot">😊</div>
+                <div class="rm-center-lbl">나</div>
+            </div>
+            <!-- Map pins injected by JS -->
+        </div>
+
+        <div class="radar-bottom">
+            <div class="radar-count">반경 2km 내 <strong id="nearby-ct">23</strong>명 발견</div>
+            <div class="filter-row">
+                <div class="fchip on" onclick="filterChip(this)">🎵 전체</div>
+                <div class="fchip" onclick="filterChip(this)">💜 BTS</div>
+                <div class="fchip" onclick="filterChip(this)">🌸 BLACKPINK</div>
+                <div class="fchip" onclick="filterChip(this)">⚡ aespa</div>
+                <div class="fchip" onclick="filterChip(this)">🐣 NewJeans</div>
+                <div class="fchip" onclick="filterChip(this)">🎪 콘서트 동행</div>
+            </div>
+        </div>
+
+        <div class="bottom-nav">
+            <div class="bnav-item on" onclick="goTo('screen-radar')"><div class="bnav-icon">📡</div><div class="bnav-lbl">레이더</div></div>
+            <div class="bnav-item" onclick="goTo('screen-match')"><div class="bnav-icon">💘</div><div class="bnav-lbl">매칭</div></div>
+            <div class="bnav-item" onclick="showToast('🔔','알림','새 매칭 3건 도착!')"><div class="bnav-icon">🔔</div><div class="bnav-lbl">알림</div></div>
+            <div class="bnav-item" onclick="goTo('screen-chat')"><div class="bnav-icon">💬</div><div class="bnav-lbl">채팅</div></div>
+            <div class="bnav-item" onclick="showToast('👤','프로필','내 프로필 보기')"><div class="bnav-icon">👤</div><div class="bnav-lbl">나</div></div>
+        </div>
+    </div>
+
+    <!-- MATCH CARD -->
+    <div class="screen" id="screen-match">
+        <div class="match-topbar">
+            <div>
+                <div class="match-topbar-title">💘 매칭</div>
+                <div class="match-topbar-sub">AI 추천 · 실시간 업데이트</div>
+            </div>
+            <div class="match-settings-btn">⚙️</div>
+        </div>
+
+        <div class="card-stack">
+            <div class="card-shadow-2"></div>
+            <div class="card-shadow-1"></div>
+            <div class="match-card" id="main-card">
+                <div class="card-glow"></div>
+                <div class="card-glow-2"></div>
+                <div class="match-score">
+                    <div class="ms-num">94%</div>
+                    <div class="ms-lbl">MATCH</div>
+                </div>
+                <div class="card-avatar">🧑‍🎤</div>
+                <div class="card-name">Sophie K.</div>
+                <div class="card-meta">UCLA · 2학년 · 0.8km</div>
+                <div class="card-badges">
+                    <div class="cbadge cbadge-dist">📍 0.8km</div>
+                    <div class="cbadge cbadge-style">🎪 Concert Goer</div>
+                </div>
+                <div class="card-interests">
+                    <div class="ci-title">공통 관심사 5개</div>
+                    <div class="ci-tags">
+                        <span class="citag citag-m">💜 BTS</span>
+                        <span class="citag citag-m">⚡ aespa</span>
+                        <span class="citag citag-a">🎫 콘서트</span>
+                        <span class="citag citag-s">🃏 포카교환</span>
+                        <span class="citag citag-a">📸 직캠</span>
+                    </div>
+                </div>
+                <!-- Overlays -->
+                <div class="swipe-ol swipe-ol-like" id="ol-like"><div class="swipe-ol-txt">LIKE 💜</div></div>
+                <div class="swipe-ol swipe-ol-pass" id="ol-pass"><div class="swipe-ol-txt">PASS ✕</div></div>
+            </div>
+        </div>
+
+        <div class="swipe-hint">← 넘기기 &nbsp;&nbsp;&nbsp; 좋아요 →</div>
+        <div class="swipe-actions">
+            <button class="sact-btn sact-pass" onclick="passCard()">✕</button>
+            <button class="sact-btn sact-like" onclick="likeCard()">💜</button>
+            <button class="sact-btn sact-super" onclick="superLike()">⭐</button>
+        </div>
+
+        <div class="bottom-nav">
+            <div class="bnav-item" onclick="goTo('screen-radar')"><div class="bnav-icon">📡</div><div class="bnav-lbl">레이더</div></div>
+            <div class="bnav-item on" onclick="goTo('screen-match')"><div class="bnav-icon">💘</div><div class="bnav-lbl">매칭</div></div>
+            <div class="bnav-item" onclick="showToast('🔔','알림','새 매칭 3건 도착!')"><div class="bnav-icon">🔔</div><div class="bnav-lbl">알림</div></div>
+            <div class="bnav-item" onclick="goTo('screen-chat')"><div class="bnav-icon">💬</div><div class="bnav-lbl">채팅</div></div>
+            <div class="bnav-item" onclick="showToast('👤','프로필','내 프로필 보기')"><div class="bnav-icon">👤</div><div class="bnav-lbl">나</div></div>
+        </div>
+    </div>
+
+    <!-- MATCHED! -->
+    <div class="screen" id="screen-matched">
+        <div class="matched-bg"></div>
+        <div class="confetti-wrap" id="confetti-wrap"></div>
+        <div class="matched-content">
+            <div class="matched-emoji">🎊</div>
+            <div class="matched-avs">
+                <div class="mav mav-me">😊</div>
+                <div class="mav-heart">💜</div>
+                <div class="mav mav-them">🧑‍🎤</div>
+            </div>
+            <div class="matched-title">It's a Match!</div>
+            <div class="matched-desc">
+                Sophie K.도 나를 좋아해요!<br>
+                BTS 팬 동지를 찾았어요 💜<br>
+                <span style="color:rgba(255,255,255,.28);font-size:13px;">0.8km · 94% compatibility</span>
+            </div>
+            <button class="btn-primary" onclick="goTo('screen-chat')" style="margin-bottom:10px;">💬 지금 메시지 보내기</button>
+            <button class="btn-ghost" onclick="goTo('screen-radar')">레이더로 돌아가기</button>
+        </div>
+    </div>
+
+    <!-- CHAT -->
+    <div class="screen" id="screen-chat">
+        <div class="chat-header">
+            <div class="back-btn" onclick="goTo('screen-radar')">←</div>
+            <div class="chat-av">🧑‍🎤<div class="chat-av-online"></div></div>
+            <div class="chat-info">
+                <div class="chat-name">Sophie K.</div>
+                <div class="chat-meta">💜 BTS, aespa · UCLA · 0.8km</div>
+            </div>
+            <div class="chat-btns">
+                <div class="chat-btn">📞</div>
+                <div class="chat-btn">⋯</div>
+            </div>
+        </div>
+        <div class="chat-msgs" id="chat-msgs">
+            <div class="match-intro">
+                <div class="mi-title">🎊 새로운 매칭! 94% 호환</div>
+                <div class="mi-sub">BTS, aespa 공통 팬 · 0.8km</div>
+            </div>
+            <div class="msg rcv"><div class="msg-bbl">안녕하세요! Fan Radar에서 매칭됐네요 ☺️ BTS 아미시죠?</div><div class="msg-time">오후 3:24</div></div>
+            <div class="msg snt"><div class="msg-bbl">네!! 아미예요 😊 혹시 다음달 콘서트 가세요?</div><div class="msg-time">오후 3:25</div></div>
+            <div class="msg rcv"><div class="msg-bbl">헐 저도 티켓 있어요!! LA 공연이요? 같이 가요 🎫✨</div><div class="msg-time">오후 3:26</div></div>
+            <div class="msg snt"><div class="msg-bbl">진짜요?? 완전 좋아요!! UCLA 다니세요?</div><div class="msg-time">오후 3:27</div></div>
+            <div class="msg rcv"><div class="msg-bbl">네 2학년이에요! 캠퍼스에서 만날 수 있겠다 🏫</div><div class="msg-time">오후 3:27</div></div>
+        </div>
+        <div class="chat-suggests">
+            <div class="cs-chip" onclick="sendSuggest(this)">🎫 같이 콘서트 가요!</div>
+            <div class="cs-chip" onclick="sendSuggest(this)">🃏 포카 교환할래요?</div>
+            <div class="cs-chip" onclick="sendSuggest(this)">☕ 캠퍼스에서 만나요</div>
+        </div>
+        <div class="chat-input-row">
+            <input class="chat-inp" id="chat-inp" placeholder="메시지 입력…" onkeydown="if(event.key==='Enter')sendMsg()">
+            <button class="chat-send" onclick="sendMsg()">➤</button>
+        </div>
+    </div>
+
+</div><!-- /phone-frame -->
+
+<!-- DEMO NAV -->
+<div style="display:flex;flex-direction:column;align-items:center;margin-top:20px;">
+    <div class="demo-label">DEMO NAVIGATION</div>
+    <div class="demo-nav">
+        <button class="demo-btn" id="db-onboard" onclick="goTo('screen-onboard')">🚀 온보딩</button>
+        <button class="demo-btn" id="db-groups" onclick="goTo('screen-groups')">💜 그룹 선택</button>
+        <button class="demo-btn on" id="db-radar" onclick="goTo('screen-radar')">📡 레이더 지도</button>
+        <button class="demo-btn" id="db-match" onclick="goTo('screen-match')">💘 AI 매칭</button>
+        <button class="demo-btn" id="db-chat" onclick="goTo('screen-chat')">💬 채팅</button>
+    </div>
+</div>
+
+<script>
+// ====== STATE ======
+let history = ['screen-splash'];
+let selGroups = new Set();
+
+const groups = [
+    {e:'💜',n:'BTS',f:'ARMY'},
+    {e:'🌸',n:'BLACKPINK',f:'BLINK'},
+    {e:'⚡',n:'aespa',f:'MY'},
+    {e:'🐣',n:'NewJeans',f:'Bunnies'},
+    {e:'🍭',n:'TWICE',f:'ONCE'},
+    {e:'🦋',n:'SEVENTEEN',f:'CARAT'},
+    {e:'🔥',n:'Stray Kids',f:'STAY'},
+    {e:'🌙',n:'IVE',f:'DIVE'},
+    {e:'✨',n:'ILLIT',f:'LLIT'},
+];
+
+const mapPins = [
+    {e:'👩',  top:'26%',left:'20%', pct:94, grp:'BTS',      col:'#FF2D78', delay:700},
+    {e:'🧑‍🎤', top:'16%',left:'57%', pct:87, grp:'aespa',    col:'#7C3AED', delay:1300},
+    {e:'👩‍🦱', top:'60%',left:'17%', pct:76, grp:'BLACKPINK',col:'#FF2D78', delay:1900},
+    {e:'🧑',  top:'70%',left:'60%', pct:91, grp:'BTS',      col:'#FF2D78', delay:1000},
+    {e:'👩‍🦰', top:'40%',left:'74%', pct:82, grp:'NewJeans', col:'#00D4FF', delay:1600},
+    {e:'👦',  top:'33%',left:'38%', pct:79, grp:'TWICE',    col:'#FF6B35', delay:2200},
+    {e:'👧',  top:'53%',left:'44%', pct:88, grp:'IVE',      col:'#7C3AED', delay:800},
+];
+
+// ====== INIT ======
+window.onload = function() {
+    buildGroups();
+    buildMapPins();
+    animateOnlineCount();
+    setTimeout(() => goTo('screen-onboard'), 2400);
+};
+
+// ====== NAVIGATION ======
+function goTo(id) {
+    const cur = document.querySelector('.screen.active');
+    const nxt = document.getElementById(id);
+    if (!nxt || cur === nxt) return;
+    cur.classList.remove('active');
+    nxt.classList.add('active', 'enter');
+    setTimeout(() => nxt.classList.remove('enter'), 350);
+    history.push(id);
+    updateDemoNav(id);
+    if (id === 'screen-matched') spawnConfetti();
+    if (id === 'screen-chat') setTimeout(scrollChat, 100);
+}
+
+function goBack() {
+    if (history.length < 2) return;
+    history.pop();
+    const prev = history[history.length - 1];
+    document.querySelector('.screen.active').classList.remove('active');
+    document.getElementById(prev).classList.add('active');
+    updateDemoNav(prev);
+}
+
+function startRadar() {
+    goTo('screen-radar');
+    showToast('📡', '레이더 ON!', '근처 팬 탐색 시작');
+}
+
+function updateDemoNav(id) {
+    const map = {
+        'screen-onboard':'db-onboard','screen-signup':'db-onboard',
+        'screen-groups':'db-groups','screen-style':'db-groups','screen-location':'db-groups',
+        'screen-radar':'db-radar',
+        'screen-match':'db-match','screen-matched':'db-match',
+        'screen-chat':'db-chat',
+    };
+    document.querySelectorAll('.demo-btn').forEach(b => b.classList.remove('on'));
+    const btn = document.getElementById(map[id]);
+    if (btn) btn.classList.add('on');
+}
+
+// ====== GROUPS ======
+function buildGroups() {
+    const grid = document.getElementById('group-grid');
+    grid.innerHTML = groups.map((g,i) =>
+        `<div class="gchip" onclick="toggleGroup(this,${i})" data-i="${i}">
+            <div class="ge">${g.e}</div>
+            <div class="gn">${g.n}</div>
+            <div class="gf">${g.f}</div>
+        </div>`
+    ).join('');
+    // Pre-select BTS + aespa
+    [0,2].forEach(i => {
+        grid.children[i].classList.add('sel');
+        selGroups.add(i);
+    });
+    updateSelCount();
+}
+
+function toggleGroup(el, i) {
+    el.classList.toggle('sel');
+    if (el.classList.contains('sel')) selGroups.add(i);
+    else selGroups.delete(i);
+    updateSelCount();
+}
+
+function updateSelCount() {
+    const el = document.getElementById('sel-count');
+    const n = selGroups.size;
+    el.innerHTML = n === 0
+        ? '아직 선택 안 했어요'
+        : `<b>${n}개</b> 선택됨 · 계속 추가 가능해요`;
+}
+
+function selStyle(el) {
+    document.querySelectorAll('.sopt').forEach(o => o.classList.remove('sel'));
+    el.classList.add('sel');
+}
+
+// ====== RADAR MAP PINS ======
+function buildMapPins() {
+    const map = document.getElementById('radar-map');
+    mapPins.forEach(p => {
+        const el = document.createElement('div');
+        el.className = 'mpin';
+        el.style.cssText = `top:${p.top};left:${p.left};opacity:0;`;
+        el.onclick = () => { showToast(p.e, `${p.pct}% Match!`, `${p.grp} 팬 발견`); setTimeout(() => goTo('screen-match'), 1100); };
+        el.innerHTML = `
+            <div class="mpin-av" style="border-color:${p.col}">
+                <div class="mpin-ring" style="border-color:${p.col};animation-delay:${Math.random()*.8}s"></div>
+                ${p.e}
+                <div class="mpin-badge">${p.pct}%</div>
+            </div>`;
+        map.appendChild(el);
+        setTimeout(() => {
+            el.style.opacity = '1';
+            el.classList.add('pin-pop');
+        }, p.delay);
+    });
+}
+
+function animateOnlineCount() {
+    let c = 247;
+    setInterval(() => {
+        c += Math.round(Math.random() * 6) - 3;
+        c = Math.max(232, Math.min(268, c));
+        const el = document.getElementById('online-ct');
+        if (el) el.textContent = c + '명 온라인';
+    }, 2800);
+}
+
+function filterChip(el) {
+    document.querySelectorAll('.fchip').forEach(c => c.classList.remove('on'));
+    el.classList.add('on');
+    const n = Math.floor(Math.random() * 22) + 8;
+    document.getElementById('nearby-ct').textContent = n;
+}
+
+// ====== MATCH CARD ======
+let dragging = false, dragX0 = 0;
+const card = document.getElementById('main-card');
+
+card.addEventListener('mousedown', e => { dragging = true; dragX0 = e.clientX; e.preventDefault(); });
+document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const dx = e.clientX - dragX0;
+    card.style.transform = `translateX(${dx}px) rotate(${dx*.045}deg)`;
+    document.getElementById('ol-like').style.opacity = dx > 30 ? Math.min(dx/90,1) : 0;
+    document.getElementById('ol-pass').style.opacity = dx < -30 ? Math.min(-dx/90,1) : 0;
+});
+document.addEventListener('mouseup', e => {
+    if (!dragging) return; dragging = false;
+    const dx = e.clientX - dragX0;
+    if (dx > 80) likeCard();
+    else if (dx < -80) passCard();
+    else {
+        card.style.transform = '';
+        document.getElementById('ol-like').style.opacity = 0;
+        document.getElementById('ol-pass').style.opacity = 0;
+    }
+});
+
+// Touch support
+card.addEventListener('touchstart', e => { dragging = true; dragX0 = e.touches[0].clientX; }, {passive:true});
+card.addEventListener('touchmove', e => {
+    if (!dragging) return;
+    const dx = e.touches[0].clientX - dragX0;
+    card.style.transform = `translateX(${dx}px) rotate(${dx*.045}deg)`;
+    document.getElementById('ol-like').style.opacity = dx > 30 ? Math.min(dx/90,1) : 0;
+    document.getElementById('ol-pass').style.opacity = dx < -30 ? Math.min(-dx/90,1) : 0;
+}, {passive:true});
+card.addEventListener('touchend', e => {
+    if (!dragging) return; dragging = false;
+    const dx = e.changedTouches[0].clientX - dragX0;
+    if (dx > 70) likeCard(); else if (dx < -70) passCard();
+    else {
+        card.style.transform = '';
+        document.getElementById('ol-like').style.opacity = 0;
+        document.getElementById('ol-pass').style.opacity = 0;
+    }
+});
+
+function likeCard() {
+    card.style.transition = 'transform .42s ease-out, opacity .42s';
+    card.style.transform = 'translateX(220%) rotate(22deg)';
+    card.style.opacity = '0';
+    setTimeout(() => {
+        goTo('screen-matched');
+        card.style.cssText = '';
+        document.getElementById('ol-like').style.opacity = 0;
+    }, 420);
+}
+
+function passCard() {
+    card.style.transition = 'transform .42s ease-out, opacity .42s';
+    card.style.transform = 'translateX(-220%) rotate(-22deg)';
+    card.style.opacity = '0';
+    setTimeout(() => {
+        showToast('👋','다음 매칭','새로운 팬을 찾고 있어요…');
+        card.style.cssText = '';
+        document.getElementById('ol-pass').style.opacity = 0;
+    }, 420);
+}
+
+function superLike() { showToast('⭐','슈퍼 라이크!','Sophie K.에게 알림이 갔어요'); }
+
+// ====== CONFETTI ======
+function spawnConfetti() {
+    const wrap = document.getElementById('confetti-wrap');
+    wrap.innerHTML = '';
+    const cols = ['#FF2D78','#7C3AED','#FFD700','#00D4FF','#FF6B35','#00DC78'];
+    for (let i = 0; i < 50; i++) {
+        const p = document.createElement('div');
+        p.className = 'cp';
+        const size = 6 + Math.random()*9;
+        p.style.cssText = `
+            left:${Math.random()*100}%;top:-20px;
+            width:${size}px;height:${size}px;
+            background:${cols[Math.floor(Math.random()*cols.length)]};
+            animation-duration:${2+Math.random()*3.5}s;
+            animation-delay:${Math.random()*2}s;
+        `;
+        wrap.appendChild(p);
+    }
+}
+
+// ====== CHAT ======
+const autoReplies = [
+    '완전 좋아요! 🎉', '저도 그 생각 하고 있었어요!',
+    '진짜요?? 대박 😆', '🎵 좋아요! 언제 시간 돼요?',
+    '헐 너무 좋다!! 설레ㅠㅠ', '오 그거 저도 관심 있어요!',
+];
+
+function sendMsg() {
+    const inp = document.getElementById('chat-inp');
+    const txt = inp.value.trim();
+    if (!txt) return;
+    addMsg(txt, 'snt');
+    inp.value = '';
+    setTimeout(() => addMsg(autoReplies[Math.floor(Math.random()*autoReplies.length)], 'rcv'), 1000+Math.random()*600);
+}
+
+function sendSuggest(el) {
+    addMsg(el.textContent, 'snt');
+    el.remove();
+    setTimeout(() => addMsg('좋아요!! 언제가 좋아요? 😊', 'rcv'), 1000);
+}
+
+function addMsg(txt, type) {
+    const c = document.getElementById('chat-msgs');
+    const now = new Date();
+    const t = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0');
+    const el = document.createElement('div');
+    el.className = `msg ${type}`;
+    el.innerHTML = `<div class="msg-bbl">${txt}</div><div class="msg-time">${t}</div>`;
+    c.appendChild(el);
+    scrollChat();
+}
+
+function scrollChat() {
+    const c = document.getElementById('chat-msgs');
+    c.scrollTop = c.scrollHeight;
+}
+
+// ====== TOAST ======
+function showToast(ico, title, desc) {
+    const old = document.querySelector('.toast');
+    if (old) old.remove();
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.innerHTML = `<div class="toast-ico">${ico}</div><div class="toast-txt">${title} <small>${desc}</small></div>`;
+    document.getElementById('app').appendChild(t);
+    setTimeout(() => {
+        t.style.animation = 'tout .3s ease-out forwards';
+        setTimeout(() => t.remove(), 300);
+    }, 2600);
+}
+</script>
+</body>
+</html>
